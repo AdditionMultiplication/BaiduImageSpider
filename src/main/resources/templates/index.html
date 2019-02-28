@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>多线程百度图片爬虫</title>
+    <script src="webjars/jquery/3.1.1/jquery.min.js"></script>
+    <script src="webjars/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="webjars/bootstrap/3.3.5/css/bootstrap.min.css"/>
+</head>
+<script>
+    function reptile() {
+        var key = document.getElementById("reptile");
+        var body = document.getElementById("body");
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', "/reptile?name=" + key.value, true);
+        var para = document.createElement("span");
+        var node = document.createTextNode("正在爬取，请稍等");
+
+        para.appendChild(node);
+        body.appendChild(para)
+        xhr.onreadystatechange = function () {
+            // readyState == 4说明请求已完成
+            if (xhr.readyState == 4 && xhr.status == 200 || xhr.status == 304) {
+                var text = xhr.responseText;
+                // 从服务器获得数据
+                body.removeChild(para);
+                for (var i = 0; i < text.length; i++) {
+                    var a = document.createElement("img");
+                    a.setAttribute("src", text[i].backUrl);
+                    body.appendChild(a);
+                }
+            }
+        };
+        xhr.send();
+    }
+    function queryPic(){
+        $.ajax({
+            type:'post',    //提交方式
+            dataType:'json',//服务器的返回类型
+            url:'/queryPic',
+            data:$('#queryForm').serialize(),
+            success:function (result) {
+              for(var i=0;i< result.length;i++){
+                  var a = document.createElement("img");
+                  a.setAttribute("src", "/getPic?imgUrl="+result[i]);
+                  a.setAttribute("name","pic");
+                  a.setAttribute("height","120");
+                  a.setAttribute("width","120");
+                  var body = document.getElementById("body");
+                  body.appendChild(a);
+              }
+            },
+            error:function () {
+                alert("网络异常！！")
+            }
+
+        });
+    }
+
+    $(function () {
+        //为输入框失去焦点绑定事件
+        $("#path").blur(function () {
+            //1、失去焦点获得输入框内容
+            var pathInput=$(this).val();
+            //2、发出Ajax校验
+            $.post(
+                "/checkPath",
+                {"pathInput":pathInput},
+                function (data) {
+                    //接收服务端的返回值
+                    var isExit= data.isDir;
+                    var pathInfo = "";
+                    if(!isExit){//对返回的值进行判断
+                        pathInfo = "该路径不存在，请重新输入";
+                        $("#pathInfo").css("color","red");//设置提示文本的显示颜色
+                    }else{
+                        pathInfo = "该路径可以使用";
+                        $("#query").attr("disabled",false);
+                        $("#pathInfo").css("color","green");
+                    }
+                    //将提示信息写到用户名框后面
+                    $("#pathInfo").html(pathInfo);
+                },"json"
+            )
+        });
+    });
+</script>
+<style>
+    .col-center-block {
+        float: none;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+<body id="body">
+<div class="container">
+    <div class="row myCenter">
+        <div class="col-xs-6 col-md-4 col-center-block">
+            <form id="queryForm" class="form-signin" onsubmit="return false" action="#" method="post">
+                <h2 class="form-signin-heading ">多线程百度图片爬虫</h2>
+                <input name="keyword" type="text" id="keyword" class="form-control" placeholder="请输入需要搜索的内容" required autofocus><br>
+                <div class="form-group">
+                    <input name="path" type="text" id="path" class="form-control" placeholder="请输入图片储存路径" required autofocus>
+                    <div id="pathInfo"></div><br>
+                    <label>爬取链接线程数</label>
+                    <select name="spiderThreadNum">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                    </select>&nbsp;
+                    <label>下载图片线程数</label>
+                    <select name="downloadThreadNum">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                    </select>
+                </div>
+                <input type="button" value="查询" class="btn  btn-primary btn-block" onclick="queryPic()" id="query" disabled="disabled">
+            </form>
+        </div>
+    </div>
+</div>
+<div>
+    <!--<img id="images" src="http://localhost:8080/getPic?imgUrl=1.jpg" alt="">-->
+</div>
+</body>
+</html>
